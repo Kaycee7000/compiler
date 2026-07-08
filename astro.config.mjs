@@ -4,7 +4,6 @@ import tailwindcss from "@tailwindcss/vite";
 import cloudflare from "@astrojs/cloudflare";
 
 export default defineConfig({
-  // Generates highly performant static HTML pages driven by JSON data
   output: "static", 
   adapter: cloudflare(),
   integrations: [
@@ -12,10 +11,6 @@ export default defineConfig({
   ],
   vite: {
     plugins: [tailwindcss()],
-    resolve: {
-      alias: {
-        "@": "/src",
-      },
-    },
+    // Removed the manual alias block so Astro defers to tsconfig.json automatically
   },
 });
