@@ -1,1 +1,121 @@
-dummy data
+{
+  "profile": {
+    "name": "Ekenedirichukwu (Kaycee) Ude",
+    "title": "IT Professional",
+    "headline": "Data-Driven IT Professional | Securing and Optimizing Enterprise Systems",
+    "bio": "A recent Information Technology graduate from Kennesaw State University with hands-on experience in data analytics, cybersecurity, enterprise virtualization, and database management. I build and secure resilient systems that turn complex data into actionable insights.",
+    "email": "udekene2@gmail.com",
+    "linkedin": "linkedin.com/in/ekenedirichukwu-ude-879b10284"
+  },
+  "projects": [
+    {
+      "id": "energy",
+      "title": "Data-Driven Energy Solutions",
+      "short": "Analyzed 240,000+ household energy records to build an Excel dashboard for identifying waste and reducing operational costs.",
+      "tech": ["Python", "Pandas", "Microsoft Excel"],
+      "detailHeader": "Data-Driven Energy Solutions: From Raw Data to Cost-Saving Insights",
+      "full": "For my senior capstone, I led a project to analyze over 240,000 smart home energy consumption records to identify waste patterns. The process involved data cleaning with Python, in-depth analysis, and the creation of an interactive dashboard in Excel.",
+      "achievements": [
+        "Identified peak energy consumption between 7:00 PM and 10:00 PM.",
+        "Discovered Sub-meter 3 (Air Conditioner & Water Heater) as the #1 energy consumer.",
+        "Successfully identified a sensor data anomaly on April 29th."
+      ],
+      "visualType": "energy"
+    },
+    {
+      "id": "ml",
+      "title": "Predictive Modeling for Healthcare Outcomes",
+      "short": "Built and evaluated a Boosted Decision Tree model in Azure ML to predict patient hospital stay length, achieving 95.98% accuracy.",
+      "tech": ["Azure ML Studio", "Regression Modeling"],
+      "detailHeader": "Using Machine Learning to Predict Hospital Length of Stay",
+      "full": "I developed an end-to-end machine learning pipeline in Microsoft Azure ML Studio to predict patient length of stay. After ingesting a dataset of hospital records, I performed data cleaning, feature selection, and model training.",
+      "achievements": [
+        "Trained a model that achieved a Coefficient of Determination (R²) of 0.9598.",
+        "Engineered a full pipeline from data ingestion and cleaning to model scoring and evaluation."
+      ],
+      "visualType": "ml"
+    },
+    {
+      "id": "cyber",
+      "title": "Enterprise Cybersecurity & Network Analysis",
+      "short": "Evaluated EDR solutions for a 5,000+ endpoint environment and analyzed TCP/IP and HTTP traffic using Wireshark.",
+      "tech": ["Wireshark", "TCP/IP", "EDR/IPS", "RSA"],
+      "detailHeader": "Securing Endpoints and Analyzing Network Traffic",
+      "full": "This project combines several assignments focused on enterprise security. I evaluated leading Endpoint Detection and Response (EDR) solutions for a distributed retail company with over 5,000 devices.",
+      "achievements": [
+        "Authored a formal recommendation for an EDR solution for a 5,000+ device network.",
+        "Successfully decoded TCP and UDP sessions to troubleshoot connectivity.",
+        "Demonstrated practical knowledge of asymmetric encryption and hashing algorithms."
+      ],
+      "visualType": "cyber"
+    },
+    {
+      "id": "db",
+      "title": "Multi-Platform Database Management",
+      "short": "Designed and managed relational (Oracle SQL) and NoSQL (MongoDB) databases, implementing triggers, views, and aggregation pipelines.",
+      "tech": ["Oracle SQL", "PL/SQL", "MongoDB", "SQLite"],
+      "detailHeader": "From Relational SQL to NoSQL",
+      "full": "This project showcases my versatility in database design, implementation, and management across different platforms. I designed a relational schema and built a database in Oracle SQL, writing complex queries, procedures, and triggers.",
+      "achievements": [
+        "Designed an Oracle database with foreign key constraints, indexes, and triggers for history logging.",
+        "Wrote a MongoDB aggregation query to calculate average scores across different assessment types.",
+        "Created a view in Oracle SQL to join tables and simplify data access."
+      ],
+      "visualType": "database"
+    },
+    {
+      "id": "virt",
+      "title": "Enterprise Virtualization & Systems Architecture",
+      "short": "Designed a VMware vSphere virtualization solution for an enterprise scaling from 15,000 to 20,000 employees.",
+      "tech": ["VMware vSphere", "ESXi", "vCenter", "Hyper-V", "KVM", "Network Load Balancing"],
+      "detailHeader": "Designing Scalable and Resilient IT Infrastructure",
+      "full": "I analyzed and designed a virtual infrastructure solution capable of supporting an enterprise scaling from 15,000 to 20,000 employees. I recommended VMware vSphere based on its scalability, high availability (HA), and centralized management features.",
+      "achievements": [
+        "Authored a detailed proposal specifying hardware, networking (40-100 Gbps backbone), and storage (200+ TB SAN/NAS) requirements.",
+        "Outlined a 5-year support plan covering maintenance, capacity planning, security, and staff training."
+      ],
+      "visualType": "virtualization"
+    },
+    {
+      "id": "cicd",
+      "title": "Enterprise CI/CD & GitOps Pipeline",
+      "short": "Led the GitOps/Kubernetes workstream on a 5-person capstone team, building a Jenkins → Docker → Trivy → ArgoCD → Kubernetes pipeline with Prometheus/Grafana monitoring.",
+      "tech": ["Jenkins", "Docker", "Kubernetes", "Helm", "ArgoCD", "Trivy", "Prometheus/Grafana"],
+      "detailHeader": "Building a Secure, Automated GitOps Delivery Pipeline",
+      "full": "As part of a 5-person capstone team, I served as the GitOps/Kubernetes lead on a 10-week project to build a production-style CI/CD pipeline for a containerized Flask application. Code moves from a GitHub push to a running, monitored Kubernetes workload automatically.",
+      "achievements": [
+        "Led the GitOps/Kubernetes workstream across a 10-week, 5-person capstone, taking deployments from a manual process to a fully automated ArgoCD GitOps workflow.",
+        "Migrated raw Kubernetes manifests to a parameterized Helm chart, enabling config-driven, auto-synced, self-healing deployments.",
+        "Implemented least-privilege RBAC with separate service accounts for the application and the GitOps deployer, plus Kubernetes Secrets for credential management.",
+        "Contributed to a full DevSecOps loop — Jenkins CI, Docker builds, Trivy filesystem/image scanning, ArgoCD delivery, and Prometheus/Grafana monitoring across 3 custom dashboards."
+      ],
+      "visualType": "cicd"
+    }
+  ],
+  "skills": [
+    {
+      "title": "Data & Analytics",
+      "items": ["Python", "Pandas", "Microsoft Excel", "Power BI", "Azure Machine Learning", "Data Cleaning", "Data Visualization", "Predictive Modeling"]
+    },
+    {
+      "title": "Databases",
+      "items": ["Oracle SQL", "PL/SQL", "MongoDB", "SQLite", "Relational Database Design", "NoSQL"]
+    },
+    {
+      "title": "Cybersecurity",
+      "items": ["Network Traffic Analysis", "Wireshark", "EDR/IPS", "Intrusion Detection", "Cryptography (RSA, SHA)", "Risk Management"]
+    },
+    {
+      "title": "IT Systems & Virtualization",
+      "items": ["VMware vSphere", "ESXi", "vCenter", "Microsoft Hyper-V", "System Administration", "Network Load Balancing", "IT Infrastructure Design"]
+    },
+    {
+      "title": "Web & Software Development",
+      "items": ["HTML", "CSS", "JavaScript", "Node.js", "Express.js", "SDLC (Agile & Waterfall)", "Git"]
+    },
+    {
+      "title": "DevOps & CI/CD",
+      "items": ["Jenkins", "Docker", "Kubernetes", "Helm", "ArgoCD (GitOps)", "Prometheus", "Grafana", "Trivy", "CI/CD Pipeline Design"]
+    }
+  ]
+}
