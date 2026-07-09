@@ -1,15 +1,31 @@
 ---
 import Layout from '../layouts/Layout.astro';
-import Portfolio from '../components/Portfolio';
-import '../styles/global.css';
-import portfolioData from '../data/portfolio.json';
-
-const { profile } = portfolioData;
 ---
 
-<Layout title={`${profile.name} — Professional Portfolio`} description={profile.headline}>
-	<main>
-		<!-- Hydrates the component interface context immediately on user screen load -->
-		<Portfolio client:load />
-	</main>
+<Layout title="AI Portfolio Engine" description="Generate your portfolio in 60 seconds.">
+  <main class="flex min-h-screen flex-col items-center justify-center bg-slate-50 p-6 text-center antialiased">
+    
+    <div class="inline-flex items-center rounded-full border border-amber-200 bg-amber-100 px-3 py-1 text-sm font-medium text-amber-900 mb-6">
+      ⚡ Beta V1.0 Live
+    </div>
+
+    <h1 class="text-5xl font-black tracking-tight text-slate-900 sm:text-7xl">
+      Autopilot Portfolio Engine
+    </h1>
+    
+    <p class="mt-6 max-w-2xl text-lg text-slate-600 sm:text-xl">
+      Connect your .edu OneDrive and let AI analyze your coursework to instantly generate a premium, globally hosted portfolio.
+    </p>
+    
+    <div class="mt-10 flex flex-col gap-4 sm:flex-row sm:justify-center">
+      <button class="rounded-lg bg-slate-950 px-8 py-4 font-bold text-white transition hover:bg-slate-800 shadow-xl">
+        Connect OneDrive
+      </button>
+      {/* Change this URL to whatever student_id you put in your Supabase database to test! */}
+      <a href="/demo-student" class="rounded-lg border-2 border-slate-200 bg-white px-8 py-4 font-bold text-slate-900 transition hover:border-slate-300">
+        View Demo Profile
+      </a>
+    </div>
+
+  </main>
 </Layout>
