@@ -1,16 +1,15 @@
 ---
 // src/pages/[student_id].astro
 import Layout from '../layouts/Layout.astro';
-import * as Templates from '../components/IndustryTemplates';
+// 1. Import the specific Router component!
+import { PortfolioRouter } from '../components/IndustryTemplates';
 
 const { student_id } = Astro.params;
 
-// 1. Instantly block browser system requests from hitting the database
 if (student_id === 'favicon.ico' || student_id === 'robots.txt') {
   return new Response(null, { status: 404 });
 }
 
-// 2. Cloudflare Runtime Environment Variable Fix (Fixed JS syntax!)
 const runtimeEnv = Astro.locals?.runtime?.env || import.meta.env;
 const supabaseUrl = runtimeEnv?.SUPABASE_URL;
 const supabaseKey = runtimeEnv?.SUPABASE_ANON_KEY;
@@ -19,7 +18,6 @@ if (!supabaseUrl || !supabaseKey) {
   throw new Error("SERVER ERROR: Supabase environment variables are missing from Cloudflare.");
 }
 
-// 3. Fetch from Supabase
 const response = await fetch(`${supabaseUrl}/rest/v1/portfolios?student_id=eq.${student_id}&select=*`, {
   headers: {
     'apikey': supabaseKey,
@@ -33,7 +31,6 @@ if (!response.ok) {
 
 const dbResult = await response.json();
 
-// 4. FIX THE INFINITE LOOP: Return a 404 Response directly instead of redirecting
 if (!dbResult || dbResult.length === 0) {
   return new Response(`404: Portfolio for '${student_id}' not found. Did you run the Supabase INSERT script?`, { 
     status: 404,
@@ -44,8 +41,7 @@ if (!dbResult || dbResult.length === 0) {
 const studentRecord = dbResult[0];
 const data = studentRecord.portfolio_data; 
 const cssTheme = studentRecord.theme_css; 
-
-const ActiveTemplate = Templates[studentRecord.template_id as keyof typeof Templates] || Templates.SaaSOperationsTemplate;
+const templateId = studentRecord.template_id;
 ---
 
 <Layout title={`${data.profile.name} — Professional Portfolio`} description={data.profile.headline}>
@@ -53,7 +49,8 @@ const ActiveTemplate = Templates[studentRecord.template_id as keyof typeof Templ
     <style set:html={cssTheme}></style>
 
     <main>
-        <ActiveTemplate data={data} client:load />
+        {/* 2. Call the static router and pass it the data! */}
+        <PortfolioRouter templateId={templateId} data={data} client:load />
     </main>
 
 </Layout>
