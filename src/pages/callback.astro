@@ -1,0 +1,43 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout title="Building Portfolio...">
+  <main class="flex min-h-screen flex-col items-center justify-center bg-slate-950 text-white p-6 text-center">
+    
+    <div class="animate-pulse">
+        <h1 class="text-3xl font-bold">Scanning OneDrive & Generating Portfolio...</h1>
+        <p class="mt-4 text-slate-400" id="status-text">This usually takes about 15-30 seconds. Do not close this window.</p>
+    </div>
+
+    <script is:inline>
+      // 1. Extract the token from the Microsoft URL hash
+      const hash = window.location.hash.substring(1);
+      const params = new URLSearchParams(hash);
+      const accessToken = params.get("access_token");
+
+      if (!accessToken) {
+          window.location.href = "/"; // If no token, send them back home
+      } else {
+          // 2. Send the token to the Python API
+          fetch("https://porto-pll1.onrender.com/api/generate-portfolio", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ access_token: accessToken })
+          })
+          .then(res => res.json())
+          .then(data => {
+              if(data.url) {
+                  // 3. Success! Redirect to their brand new portfolio!
+                  window.location.href = data.url; 
+              } else {
+                  document.getElementById("status-text").innerText = "Error building portfolio.";
+              }
+          })
+          .catch(err => {
+              document.getElementById("status-text").innerText = "Server Error. Is the Python API running?";
+          });
+      }
+    </script>
+  </main>
+</Layout>
