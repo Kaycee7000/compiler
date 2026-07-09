@@ -1,23 +1,28 @@
 ---
-interface Props {
-	title: string;
-	description: string;
+export interface Props {
+  title?: string;
+  description?: string;
 }
-
-const { title, description } = Astro.props;
+const {
+  title = "PortfolioAI — Turn your schoolwork into a premium portfolio",
+  description = "Connect your .edu OneDrive and let AI generate a premium, globally hosted portfolio from your coursework. Just $9.99.",
+} = Astro.props;
 ---
-
 <!doctype html>
 <html lang="en">
-	<head>
-		<meta charset="UTF-8" />
-		<meta name="description" content={description} />
-		<meta name="viewport" content="width=device-width, initial-scale=1" />
-		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-		<meta name="generator" content={Astro.generator} />
-		<title={title}</title>
-	</head>
-	<body>
-		<slot />
-	</body>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content={description} />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+    <title>{title}</title>
+    <script is:inline src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="min-h-screen bg-white text-slate-900 antialiased">
+    <slot />
+  </body>
 </html>
