@@ -5,12 +5,21 @@ import * as Templates from '../components/IndustryTemplates';
 
 const { student_id } = Astro.params;
 
-// Pull the secure variables from the .env file
-const runtimeEnv = Astro.locals?.runtime?.env || import.meta.env;
-const supabaseUrl = runtimeEnv.SUPABASE_URL;
-const supabaseKey = runtimeEnv.SUPABASE_ANON_KEY
+// 1. Instantly block browser system requests from hitting the database
+if (student_id === 'favicon.ico' || student_id === 'robots.txt') {
+  return new Response(null, { status: 404 });
+}
 
-// Use the variables in your fetch request
+// 2. Cloudflare Runtime Environment Variable Fix (Fixed JS syntax!)
+const runtimeEnv = Astro.locals?.runtime?.env || import.meta.env;
+const supabaseUrl = runtimeEnv?.SUPABASE_URL;
+const supabaseKey = runtimeEnv?.SUPABASE_ANON_KEY;
+
+if (!supabaseUrl || !supabaseKey) {
+  throw new Error("SERVER ERROR: Supabase environment variables are missing from Cloudflare.");
+}
+
+// 3. Fetch from Supabase
 const response = await fetch(`${supabaseUrl}/rest/v1/portfolios?student_id=eq.${student_id}&select=*`, {
   headers: {
     'apikey': supabaseKey,
@@ -18,29 +27,32 @@ const response = await fetch(`${supabaseUrl}/rest/v1/portfolios?student_id=eq.${
   }
 });
 
+if (!response.ok) {
+  throw new Error(`DATABASE ERROR: ${response.status} ${response.statusText}`);
+}
+
 const dbResult = await response.json();
 
-// 3. Handle 404 if the student doesn't exist
+// 4. FIX THE INFINITE LOOP: Return a 404 Response directly instead of redirecting
 if (!dbResult || dbResult.length === 0) {
-  return Astro.redirect('/404');
+  return new Response(`404: Portfolio for '${student_id}' not found. Did you run the Supabase INSERT script?`, { 
+    status: 404,
+    headers: { "Content-Type": "text/html" }
+  });
 }
 
 const studentRecord = dbResult[0];
-const data = studentRecord.portfolio_data; // The Gemini JSON
-const cssTheme = studentRecord.theme_css; // The Gemini CSS
+const data = studentRecord.portfolio_data; 
+const cssTheme = studentRecord.theme_css; 
 
-// 4. Resolve the correct template (Defaulting to SaaSOperationsTemplate if none is specified)
-// In production, your Python script will set `template_id` to one of the catalog names
 const ActiveTemplate = Templates[studentRecord.template_id as keyof typeof Templates] || Templates.SaaSOperationsTemplate;
 ---
 
 <Layout title={`${data.profile.name} — Professional Portfolio`} description={data.profile.headline}>
     
-    {/* Inject the AI-generated Tailwind CSS theme directly into the head */}
     <style set:html={cssTheme}></style>
 
     <main>
-        {/* Pass the JSON data into the dynamically selected React template */}
         <ActiveTemplate data={data} client:load />
     </main>
 
