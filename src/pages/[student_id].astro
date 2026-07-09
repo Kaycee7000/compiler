@@ -1,0 +1,44 @@
+---
+// src/pages/[student_id].astro
+import Layout from '../layouts/Layout.astro';
+import * as Templates from '../components/IndustryTemplates';
+
+// 1. Get the dynamic URL parameter (e.g., "alex-rivera")
+const { student_id } = Astro.params;
+
+// 2. Fetch the specific student's data from Supabase
+// (Replace YOUR_PROJECT_URL and YOUR_ANON_KEY with your actual Supabase project keys)
+const response = await fetch(`https://YOUR_PROJECT_URL.supabase.co/rest/v1/portfolios?student_id=eq.${student_id}&select=*`, {
+  headers: {
+    'apikey': 'YOUR_ANON_KEY',
+    'Authorization': 'Bearer YOUR_ANON_KEY'
+  }
+});
+
+const dbResult = await response.json();
+
+// 3. Handle 404 if the student doesn't exist
+if (!dbResult || dbResult.length === 0) {
+  return Astro.redirect('/404');
+}
+
+const studentRecord = dbResult[0];
+const data = studentRecord.portfolio_data; // The Gemini JSON
+const cssTheme = studentRecord.theme_css; // The Gemini CSS
+
+// 4. Resolve the correct template (Defaulting to SaaSOperationsTemplate if none is specified)
+// In production, your Python script will set `template_id` to one of the catalog names
+const ActiveTemplate = Templates[studentRecord.template_id as keyof typeof Templates] || Templates.SaaSOperationsTemplate;
+---
+
+<Layout title={`${data.profile.name} — Professional Portfolio`} description={data.profile.headline}>
+    
+    {/* Inject the AI-generated Tailwind CSS theme directly into the head */}
+    <style set:html={cssTheme}></style>
+
+    <main>
+        {/* Pass the JSON data into the dynamically selected React template */}
+        <ActiveTemplate data={data} client:load />
+    </main>
+
+</Layout>
