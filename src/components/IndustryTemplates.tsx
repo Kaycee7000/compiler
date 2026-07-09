@@ -398,3 +398,29 @@ export const templateCatalog = [
   { name: "MusicProducerTemplate", industry: "Music", visualType: "waveform" },
   { name: "ClimateConsultancyTemplate", industry: "Climate consulting", visualType: "climate" },
 ] as const;
+// Add this at the very bottom of IndustryTemplates.tsx
+export function PortfolioRouter({ templateId, data }: { templateId: string, data: any }) {
+  // Map the string from the database to the actual React function
+  const templates: Record<string, React.FC<{ data: any }>> = {
+    ClassicPortfolioTemplate,
+    ArchitectureStudioTemplate,
+    MedicalClinicTemplate,
+    SaaSOperationsTemplate,
+    IndieGameStudioTemplate,
+    ClimateConsultancyTemplate,
+    RestaurantTemplate,
+    NonprofitImpactTemplate,
+    EditorialMagazineTemplate,
+    WeddingPlannerTemplate,
+    FitnessCoachTemplate,
+    RealEstateAdvisorTemplate,
+    LegalPracticeTemplate,
+    ResearchLabTemplate,
+    MusicProducerTemplate
+  };
+
+  // Select the template, fallback to SaaSOperationsTemplate if not found
+  const ActiveTemplate = templates[templateId] || SaaSOperationsTemplate;
+  
+  return <ActiveTemplate data={data} />;
+}
