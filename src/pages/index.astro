@@ -1,40 +1,103 @@
 ---
 import Layout from '../layouts/Layout.astro';
 ---
-
 <Layout>
   <main class="flex min-h-screen flex-col items-center justify-center bg-slate-50 p-6 text-center antialiased">
     <div class="inline-flex items-center rounded-full border border-amber-200 bg-amber-100 px-3 py-1 text-sm font-medium text-amber-900 mb-6">
       ⚡ Beta V1.0 Live
     </div>
-
     <h1 class="text-5xl font-black tracking-tight text-slate-900 sm:text-7xl">
       Autopilot Portfolio Engine
     </h1>
-    
-    <p class="mt-6 max-w-2xl text-lg text-slate-600 sm:text-xl">
-      Connect your .edu OneDrive and let AI analyze your coursework to instantly generate a premium, globally hosted portfolio.
-    </p>
-    
-    <div class="mt-10 flex flex-col gap-4 sm:flex-row sm:justify-center">
-      {/* 1. THE AUTH SCRIPT */}
-      <script is:inline>
-        function loginWithMicrosoft() {
-          const clientId = "bc1e157e-9abe-4f5a-aaae-0c20c994c460";
-          // We redirect to a new /callback page after they log in
-          const redirectUri = window.location.origin + "/callback"; 
-          const scopes = "Files.Read User.Read";
-          const authUrl = `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id=${clientId}&response_type=token&redirect_uri=${redirectUri}&scope=${scopes}`;
-          window.location.href = authUrl;
-        }
-      </script>
 
+    <p class="mt-6 max-w-2xl text-lg text-slate-600 sm:text-xl">
+      Upload your resume and let AI analyze your coursework to instantly generate a premium, globally hosted portfolio.
+    </p>
+
+    <div class="mt-10 flex flex-col gap-4 sm:flex-row sm:justify-center">
+      {/* --- LEGACY (disabled): Microsoft OneDrive OAuth. Function body is commented
+           out and its only caller (the button below) is disabled, so this tag is
+           inert. Kept in place for quick rollback. --- */}
+      <script is:inline>
+        // function loginWithMicrosoft() {
+        //   const clientId = "bc1e157e-9abe-4f5a-aaae-0c20c994c460";
+        //   // We redirect to a new /callback page after they log in
+        //   const redirectUri = window.location.origin + "/callback";
+        //   const scopes = "Files.Read User.Read";
+        //   const authUrl = `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id=${clientId}&response_type=token&redirect_uri=${redirectUri}&scope=${scopes}`;
+        //   window.location.href = authUrl;
+        // }
+      </script>
+      {/*
       <button onclick="loginWithMicrosoft()" class="rounded-lg bg-slate-950 px-8 py-4 font-bold text-white transition hover:bg-slate-800 shadow-xl cursor-pointer">
         Connect OneDrive
       </button>
+      */}
+
+      {/* NEW: resume upload replaces the OneDrive connect flow */}
+      <script is:inline>
+        const RESUME_API_ENDPOINT = "https://porto-pll1.onrender.com/api/generate-portfolio";
+
+        function triggerResumeUpload() {
+          document.getElementById("resume-input").click();
+        }
+
+        async function handleResumeSelected(input) {
+          const file = input.files[0];
+          if (!file) return;
+
+          const button = document.getElementById("upload-button");
+          const status = document.getElementById("upload-status");
+          const originalLabel = button.textContent;
+
+          button.disabled = true;
+          button.textContent = "Generating your portfolio...";
+          status.textContent = "";
+
+          const formData = new FormData();
+          formData.append("resume", file);
+
+          try {
+            const res = await fetch(RESUME_API_ENDPOINT, {
+              method: "POST",
+              body: formData,
+            });
+
+            if (!res.ok) {
+              const err = await res.json().catch(() => ({}));
+              throw new Error(err.detail || `Request failed (${res.status})`);
+            }
+
+            const data = await res.json();
+            window.location.href = data.url;
+          } catch (err) {
+            status.textContent = err.message || "Couldn't generate your portfolio. Please try again.";
+            button.disabled = false;
+            button.textContent = originalLabel;
+            input.value = "";
+          }
+        }
+      </script>
+      <input
+        type="file"
+        id="resume-input"
+        accept=".pdf,.docx,.txt,.md"
+        class="hidden"
+        onchange="handleResumeSelected(this)"
+      />
+      <button
+        id="upload-button"
+        onclick="triggerResumeUpload()"
+        class="rounded-lg bg-slate-950 px-8 py-4 font-bold text-white transition hover:bg-slate-800 shadow-xl cursor-pointer"
+      >
+        Upload Your Resume
+      </button>
+
       <a href="/demo-student" class="rounded-lg border-2 border-slate-200 bg-white px-8 py-4 font-bold text-slate-900 transition hover:border-slate-300">
         View Demo Profile
       </a>
     </div>
+
+    <p id="upload-status" class="mt-4 text-sm text-red-600"></p>
   </main>
 </Layout>
