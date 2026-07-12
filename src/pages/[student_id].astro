@@ -42,15 +42,43 @@ const studentRecord = dbResult[0];
 const data = studentRecord.portfolio_data; 
 const cssTheme = studentRecord.theme_css; 
 const templateId = studentRecord.template_id;
+
+// EXPLICITLY EXTRACT PREMIUM STATUS HERE
+const isPremium = studentRecord.is_premium;
 ---
 
 <Layout title={`${data.profile.name} — Professional Portfolio`} description={data.profile.headline}>
     
     <style set:html={cssTheme}></style>
 
-    <main>
+    <main class="relative min-h-screen">
         {/* 2. Call the static router and pass it the data! */}
         <PortfolioRouter templateId={templateId} data={data} client:load />
+        
+        {/* THE WATERMARK OVERLAY: Only renders if is_premium is FALSE */}
+        { !isPremium && (
+          <div class="fixed inset-0 z-[9999] pointer-events-none select-none overflow-hidden flex flex-col justify-between p-12 opacity-[0.04]">
+            <div class="flex justify-between w-full text-4xl font-black tracking-widest text-slate-900 uppercase transform -rotate-12 whitespace-nowrap">
+              <span>Portloo Preview</span>
+              <span>Portloo Preview</span>
+              <span>Portloo Preview</span>
+            </div>
+            <div class="flex justify-around w-full text-4xl font-black tracking-widest text-slate-900 uppercase transform -rotate-12 whitespace-nowrap">
+              <span>Portloo Preview</span>
+              <span>Portloo Preview</span>
+              <span>Portloo Preview</span>
+            </div>
+            <div class="flex justify-between w-full text-4xl font-black tracking-widest text-slate-900 uppercase transform -rotate-12 whitespace-nowrap">
+              <span>Portloo Preview</span>
+              <span>Portloo Preview</span>
+              <span>Portloo Preview</span>
+            </div>
+            <div class="flex justify-around w-full text-4xl font-black tracking-widest text-slate-900 uppercase transform -rotate-12 whitespace-nowrap">
+              <span>Portloo Preview</span>
+              <span>Portloo Preview</span>
+              <span>Portloo Preview</span>
+            </div>
+          </div>
+        )}
     </main>
-
 </Layout>
