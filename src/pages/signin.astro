@@ -58,6 +58,22 @@ const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL;
 const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY;
 const supabase = createClient(supabaseUrl, supabaseKey);
 
+// --- THE HASH CATCHER ---
+// If a user clicks an email link, gets bounced from the dashboard by SSR, 
+// they land here with the token still in the URL. Let's catch it!
+if (window.location.hash.includes('access_token')) {
+  supabase.auth.getSession().then(({ data }) => {
+    if (data.session) {
+      document.cookie = `sb-access-token=${data.session.access_token}; path=/; SameSite=Lax; Secure`;
+      document.cookie = `sb-refresh-token=${data.session.refresh_token}; path=/; SameSite=Lax; Secure`;
+      
+      // Send them back to the dashboard, keeping the hash so the "Account Verified" banner shows up!
+      window.location.href = '/dashboard' + window.location.hash; 
+    }
+  });
+}
+// ------------------------
+
 const form = document.getElementById('signin-form');
 const emailInput = document.getElementById('email') as HTMLInputElement;
 const passwordInput = document.getElementById('password') as HTMLInputElement;
@@ -79,8 +95,12 @@ form?.addEventListener('submit', async (e) => {
 
     if (error) throw error;
 
-    if (data.user) {
-      // Send authenticated users straight to their dashboard setup
+    if (data.session) {
+      // Save the tokens as cookies so Astro SSR can read them on subsequent page requests
+      document.cookie = `sb-access-token=${data.session.access_token}; path=/; SameSite=Lax; Secure`;
+      document.cookie = `sb-refresh-token=${data.session.refresh_token}; path=/; SameSite=Lax; Secure`;
+      
+      // Redirect seamlessly to their dashboard
       window.location.href = '/dashboard';
     }
   } catch (err: any) {
