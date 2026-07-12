@@ -69,7 +69,7 @@ import Layout from '../layouts/Layout.astro';
             }
 
             const data = await res.json();
-            window.location.href = data.url;
+            window.location.href = `/signup?student_id=${data.student_id}`;
           } catch (err) {
             status.textContent = err.message || "Couldn't generate your portfolio. Please try again.";
             button.disabled = false;
