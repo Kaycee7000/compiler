@@ -1,0 +1,125 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { createClient } from '@supabase/supabase-js';
+
+const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL;
+const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY;
+const supabase = createClient(supabaseUrl, supabaseKey);
+
+const accessToken = Astro.cookies.get('sb-access-token')?.value;
+const refreshToken = Astro.cookies.get('sb-refresh-token')?.value;
+
+if (!accessToken || !refreshToken) {
+  return Astro.redirect('/signin');
+}
+
+await supabase.auth.setSession({
+  access_token: accessToken,
+  refresh_token: refreshToken,
+});
+
+const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+if (authError || !user) {
+  return Astro.redirect('/signin');
+}
+
+// Fetch the user's data to display their current plan status
+const { data: portfolio } = await supabase
+  .from('portfolios')
+  .select('student_id, is_premium, portfolio_data')
+  .eq('user_id', user.id)
+  .single();
+
+const isPremium = portfolio?.is_premium || false;
+const studentName = portfolio?.portfolio_data?.profile?.name || "Student";
+const studentId = portfolio?.student_id || "";
+
+// Add your same Stripe Payment Link here so they can upgrade from the settings page too
+const STRIPE_LINK = "https://buy.stripe.com/test_YourLinkHere"; 
+---
+
+<Layout title="Account Settings | Portloo">
+  <main class="max-w-3xl mx-auto p-6 md:p-12">
+    
+    <header class="flex items-center gap-4 mb-8">
+      <a href="/dashboard" class="p-2 bg-slate-100 text-slate-600 rounded-full hover:bg-slate-200 transition">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+      </a>
+      <h1 class="text-3xl font-black text-slate-900 tracking-tight">Settings</h1>
+    </header>
+
+    <div class="space-y-6">
+      
+      <section class="bg-white p-8 rounded-2xl shadow-sm border border-slate-200">
+        <h2 class="text-xl font-bold text-slate-900 border-b border-slate-100 pb-4 mb-6">Account Details</h2>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label class="block text-sm font-bold text-slate-500 uppercase tracking-wider mb-2">Display Name</label>
+            <p class="text-lg font-medium text-slate-900">{studentName}</p>
+          </div>
+          <div>
+            <label class="block text-sm font-bold text-slate-500 uppercase tracking-wider mb-2">Email Address</label>
+            <p class="text-lg font-medium text-slate-900">{user.email}</p>
+          </div>
+          <div class="md:col-span-2">
+            <label class="block text-sm font-bold text-slate-500 uppercase tracking-wider mb-2">Portloo URL</label>
+            <a href={`/${studentId}`} target="_blank" class="text-indigo-600 hover:text-indigo-800 font-medium transition">
+              thediyblogger.com/{studentId}
+            </a>
+          </div>
+        </div>
+      </section>
+
+      <section class="bg-white p-8 rounded-2xl shadow-sm border border-slate-200">
+        <h2 class="text-xl font-bold text-slate-900 border-b border-slate-100 pb-4 mb-6">Current Plan</h2>
+        
+        <div class="flex items-center justify-between">
+          <div>
+            {isPremium ? (
+              <div>
+                <span class="inline-block bg-emerald-100 text-emerald-800 px-3 py-1 rounded-full text-sm font-black mb-2">Premium Active</span>
+                <p class="text-slate-600 font-medium mt-2">You have unlocked full theme regenerations and watermark removal.</p>
+              </div>
+            ) : (
+              <div>
+                <span class="inline-block bg-slate-100 text-slate-700 px-3 py-1 rounded-full text-sm font-black mb-2">Free Plan</span>
+                <p class="text-slate-600 font-medium mt-2">Preview mode active. Upgrade to remove the watermark and unlock AI themes.</p>
+              </div>
+            )}
+          </div>
+
+          {!isPremium && (
+            <a href={`${STRIPE_LINK}?client_reference_id=${studentId}`} class="bg-indigo-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-indigo-700 transition shadow-lg hover:shadow-indigo-200 cursor-pointer whitespace-nowrap">
+              Upgrade Now
+            </a>
+          )}
+        </div>
+      </section>
+
+      <section class="bg-white p-8 rounded-2xl shadow-sm border border-red-100">
+        <h2 class="text-xl font-bold text-red-600 border-b border-red-50 pb-4 mb-6">Danger Zone</h2>
+        <div class="flex justify-between items-center">
+          <p class="text-slate-600 font-medium">Log out of this device. You will need your password to log back in.</p>
+          <button id="signout-btn" class="bg-red-50 text-red-600 px-6 py-3 rounded-xl font-bold hover:bg-red-100 transition border border-red-100 cursor-pointer">
+            Sign Out
+          </button>
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <script is:inline>
+    // --- Sign Out Logic ---
+    const signoutBtn = document.getElementById('signout-btn');
+    signoutBtn?.addEventListener('click', () => {
+        // Clear the secure cookies
+        document.cookie = 'sb-access-token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+        document.cookie = 'sb-refresh-token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+        // Send them back to the homepage
+        window.location.href = '/';
+    });
+  </script>
+</Layout>
