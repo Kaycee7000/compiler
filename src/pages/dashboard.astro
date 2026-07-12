@@ -2,54 +2,78 @@
 import Layout from '../layouts/Layout.astro';
 import { createClient } from '@supabase/supabase-js';
 
-// 1. Initialize Supabase using your environment variables
 const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL;
 const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY;
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-// 2. Read the session directly from the request cookies via Supabase SSR
 const accessToken = Astro.cookies.get('sb-access-token')?.value;
 const refreshToken = Astro.cookies.get('sb-refresh-token')?.value;
 
-// If there are no auth cookies present, the user isn't logged in. Boot them to sign-in.
 if (!accessToken || !refreshToken) {
   return Astro.redirect('/signin');
 }
 
-// Set the session context inside the client so Supabase knows who is asking
 await supabase.auth.setSession({
   access_token: accessToken,
   refresh_token: refreshToken,
 });
 
-// 3. Grab the authenticated user's ID
 const { data: { user }, error: authError } = await supabase.auth.getUser();
 
 if (authError || !user) {
   return Astro.redirect('/signin');
 }
 
-// 4. Securely fetch this user's specific portfolio row from your database
+// UPDATE: We added 'portfolio_data' to the select query so we can grab their name for the avatar
 const { data: portfolio, error: dbError } = await supabase
   .from('portfolios')
-  .select('student_id, is_premium, tokens_remaining')
+  .select('student_id, is_premium, tokens_remaining, portfolio_data')
   .eq('user_id', user.id)
-  .single(); // Tells Supabase to expect exactly one row
+  .single();
 
-// If they have an account but somehow don't have a portfolio row yet, handle gracefully
 if (dbError || !portfolio) {
+  console.error("DASHBOARD BOUNCE: Could not find portfolio for user.", user.id);
+  if (dbError) console.error("Database Error:", dbError);
   return Astro.redirect('/');
 }
 
-// 5. Destructure the live data to map perfectly to your dashboard components
 const studentId = portfolio.student_id;
 const isPremium = portfolio.is_premium;
 const tokensRemaining = portfolio.tokens_remaining;
+
+// Extracting name and email for the Profile Dropdown
+const userEmail = user.email;
+const studentName = portfolio.portfolio_data?.profile?.name || "User";
+const userInitial = studentName.charAt(0).toUpperCase();
+
+// STRIPE PAYMENT LINK - Add your real Stripe link here!
+const STRIPE_LINK = "https://buy.stripe.com/test_XXXXXXXXXXXX"; // Replace with your Stripe Payment Link
 ---
 
 <Layout title="Dashboard | Manage Account">
   <main class="max-w-6xl mx-auto p-6 md:p-12">
     
+    <header class="flex justify-between items-center mb-8">
+       <h1 class="text-3xl font-black text-slate-900 tracking-tight">Dashboard</h1>
+       
+       <div class="relative">
+          <button id="profile-btn" class="h-12 w-12 rounded-full bg-slate-950 text-white font-black text-lg flex items-center justify-center hover:scale-105 transition shadow-lg ring-2 ring-slate-100 cursor-pointer">
+             {userInitial}
+          </button>
+          
+          <div id="profile-dropdown" class="hidden absolute right-0 mt-3 w-56 bg-white rounded-xl shadow-2xl border border-slate-100 overflow-hidden z-50 origin-top-right">
+             <div class="px-4 py-3 border-b border-slate-100 bg-slate-50">
+                <p class="text-sm font-bold text-slate-900 truncate">{studentName}</p>
+                <p class="text-xs text-slate-500 truncate font-medium">{userEmail}</p>
+             </div>
+             <a href="/settings" class="block px-4 py-3 text-sm font-bold text-slate-700 hover:bg-slate-100 hover:text-slate-900 transition">Account Settings</a>
+             <button id="signout-btn" class="w-full text-left px-4 py-3 text-sm font-bold text-red-600 hover:bg-red-50 hover:text-red-700 transition border-t border-slate-100 cursor-pointer">
+               Sign Out
+             </button>
+          </div>
+       </div>
+    </header>
+
     <div id="verification-banner" class="hidden bg-emerald-50 text-emerald-800 border border-emerald-200 p-4 rounded-xl mb-8 font-medium flex items-center gap-3">
       <svg class="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
       Account Verified Successfully!
@@ -62,7 +86,7 @@ const tokensRemaining = portfolio.tokens_remaining;
             <h2 class="text-2xl font-black tracking-tight text-slate-900 mb-2">Your Live Portfolio</h2>
             <div class="flex gap-2 mt-4">
                 <input type="text" id="share-url" readonly value="" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-lg text-slate-600 focus:outline-none" />
-                <button id="copy-btn" class="bg-slate-900 text-white px-6 font-bold rounded-lg hover:bg-slate-800 transition">Copy</button>
+                <button id="copy-btn" class="bg-slate-900 text-white px-6 font-bold rounded-lg hover:bg-slate-800 transition cursor-pointer">Copy</button>
             </div>
          </div>
 
@@ -103,9 +127,9 @@ const tokensRemaining = portfolio.tokens_remaining;
                        <li class="flex gap-2"><span>✓</span> Custom domain linking</li>
                        <li class="flex gap-2"><span>✓</span> Unlock 5 AI Theme Regenerations</li>
                     </ul>
-                    <button class="w-full bg-white text-indigo-700 mt-8 py-4 rounded-xl font-black shadow-lg hover:scale-[1.02] transition-transform cursor-pointer">
+                    <a href={`${STRIPE_LINK}?client_reference_id=${studentId}`} class="w-full bg-white text-indigo-700 mt-8 py-4 rounded-xl font-black shadow-lg hover:scale-[1.02] transition-transform cursor-pointer block text-center">
                         Upgrade - $9.99
-                    </button>
+                    </a>
                 </div>
              </div>
          )}
@@ -115,13 +139,10 @@ const tokensRemaining = portfolio.tokens_remaining;
   </main>
 
   <script is:inline define:vars={{ studentId, tokensRemaining }}>
-    // 1. Dynamic URL Generation (Works on localhost and production)
+    // --- UI Interactions ---
     const shareUrlInput = document.getElementById('share-url');
-    if (shareUrlInput) {
-        shareUrlInput.value = `${window.location.origin}/${studentId}`;
-    }
+    if (shareUrlInput) { shareUrlInput.value = `${window.location.origin}/${studentId}`; }
 
-    // 2. Copy to Clipboard functionality
     const copyBtn = document.getElementById('copy-btn');
     copyBtn?.addEventListener('click', async () => {
         try {
@@ -130,25 +151,48 @@ const tokensRemaining = portfolio.tokens_remaining;
             copyBtn.innerText = 'Copied!';
             copyBtn.classList.add('bg-emerald-600', 'hover:bg-emerald-500');
             copyBtn.classList.remove('bg-slate-900', 'hover:bg-slate-800');
-            
             setTimeout(() => {
                 copyBtn.innerText = originalText;
                 copyBtn.classList.remove('bg-emerald-600', 'hover:bg-emerald-500');
                 copyBtn.classList.add('bg-slate-900', 'hover:bg-slate-800');
             }, 2000);
-        } catch (err) {
-            console.error('Failed to copy text: ', err);
-        }
+        } catch (err) {}
     });
 
-    // 3. Email Verification Banner logic
     if (window.location.hash.includes('type=signup') || window.location.hash.includes('access_token')) {
         const banner = document.getElementById('verification-banner');
         if (banner) banner.classList.remove('hidden');
         window.history.replaceState(null, '', window.location.pathname + window.location.search);
     }
 
-    // 4. API Call: Trigger Python Backend for Theme Regeneration
+    // --- Profile Dropdown Logic ---
+    const profileBtn = document.getElementById('profile-btn');
+    const profileDropdown = document.getElementById('profile-dropdown');
+    
+    // Toggle dropdown
+    profileBtn?.addEventListener('click', (e) => {
+        e.stopPropagation(); // Prevent closing immediately
+        profileDropdown?.classList.toggle('hidden');
+    });
+
+    // Close dropdown when clicking outside
+    document.addEventListener('click', (e) => {
+        if (!profileBtn?.contains(e.target) && !profileDropdown?.contains(e.target)) {
+            profileDropdown?.classList.add('hidden');
+        }
+    });
+
+    // --- Sign Out Logic ---
+    const signoutBtn = document.getElementById('signout-btn');
+    signoutBtn?.addEventListener('click', () => {
+        // Clear the secure cookies
+        document.cookie = 'sb-access-token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+        document.cookie = 'sb-refresh-token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+        // Send them back to the homepage
+        window.location.href = '/';
+    });
+
+    // --- Regenerate API Call ---
     const regenBtn = document.getElementById('regenerate-btn');
     const btnText = document.getElementById('btn-text');
     const spinner = document.getElementById('loading-spinner');
@@ -156,11 +200,9 @@ const tokensRemaining = portfolio.tokens_remaining;
     const tokenDisplay = document.getElementById('token-display');
     const previewIframe = document.getElementById('preview-iframe');
 
-    // Make sure your backend API URL matches your deployment
     const API_ENDPOINT = "https://api.thediyblogger.com/api/regenerate-theme";
 
     regenBtn?.addEventListener('click', async () => {
-        // Reset state
         errorText.classList.add('hidden');
         regenBtn.disabled = true;
         btnText.innerText = 'Designing...';
@@ -169,28 +211,16 @@ const tokensRemaining = portfolio.tokens_remaining;
         try {
             const response = await fetch(API_ENDPOINT, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ student_id: studentId })
             });
-
             const data = await response.json();
+            if (!response.ok) throw new Error(data.detail || 'Failed to regenerate theme.');
 
-            if (!response.ok) {
-                throw new Error(data.detail || 'Failed to regenerate theme.');
-            }
-
-            // Success! Update tokens in the UI
             tokenDisplay.innerText = `${data.tokens_remaining} / 5`;
             
-            // Reload the iframe to show the brand new design
-            if (previewIframe) {
-                // Appending a timestamp forces the iframe to bypass the browser cache
-                previewIframe.src = `/${studentId}?t=${new Date().getTime()}`;
-            }
+            if (previewIframe) { previewIframe.src = `/${studentId}?t=${new Date().getTime()}`; }
 
-            // If tokens are zero after this run, lock the button permanently
             if (data.tokens_remaining <= 0) {
                 regenBtn.className = "w-full mt-6 py-3 rounded-xl font-bold transition border flex justify-center items-center gap-2 bg-slate-50 text-slate-400 cursor-not-allowed border-slate-200";
                 btnText.innerText = 'Upgrade to Regenerate';
@@ -198,7 +228,6 @@ const tokensRemaining = portfolio.tokens_remaining;
                 regenBtn.disabled = false;
                 btnText.innerText = 'Regenerate Design';
             }
-
         } catch (err) {
             errorText.innerText = err.message;
             errorText.classList.remove('hidden');
