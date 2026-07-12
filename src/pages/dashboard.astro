@@ -1,17 +1,55 @@
 ---
 import Layout from '../layouts/Layout.astro';
+import { createClient } from '@supabase/supabase-js';
 
-// Note: Fetch the user's session and portfolio row here via Supabase SSR
-// Placeholder variables for the UI logic:
-const studentId = "julian-vance"; // Replace with dynamic portfolio.student_id
-const isPremium = false;          // Replace with dynamic portfolio.is_premium
-const tokensRemaining = 0;        // Replace with dynamic portfolio.tokens_remaining (Default 0 for free, 5 for premium)
+// 1. Initialize Supabase using your environment variables
+const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL;
+const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY;
+const supabase = createClient(supabaseUrl, supabaseKey);
+
+// 2. Read the session directly from the request cookies via Supabase SSR
+const accessToken = Astro.cookies.get('sb-access-token')?.value;
+const refreshToken = Astro.cookies.get('sb-refresh-token')?.value;
+
+// If there are no auth cookies present, the user isn't logged in. Boot them to sign-in.
+if (!accessToken || !refreshToken) {
+  return Astro.redirect('/signin');
+}
+
+// Set the session context inside the client so Supabase knows who is asking
+await supabase.auth.setSession({
+  access_token: accessToken,
+  refresh_token: refreshToken,
+});
+
+// 3. Grab the authenticated user's ID
+const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+if (authError || !user) {
+  return Astro.redirect('/signin');
+}
+
+// 4. Securely fetch this user's specific portfolio row from your database
+const { data: portfolio, error: dbError } = await supabase
+  .from('portfolios')
+  .select('student_id, is_premium, tokens_remaining')
+  .eq('user_id', user.id)
+  .single(); // Tells Supabase to expect exactly one row
+
+// If they have an account but somehow don't have a portfolio row yet, handle gracefully
+if (dbError || !portfolio) {
+  return Astro.redirect('/');
+}
+
+// 5. Destructure the live data to map perfectly to your dashboard components
+const studentId = portfolio.student_id;
+const isPremium = portfolio.is_premium;
+const tokensRemaining = portfolio.tokens_remaining;
 ---
 
 <Layout title="Dashboard | Manage Account">
   <main class="max-w-6xl mx-auto p-6 md:p-12">
     
-    <!-- Account Verified Banner -->
     <div id="verification-banner" class="hidden bg-emerald-50 text-emerald-800 border border-emerald-200 p-4 rounded-xl mb-8 font-medium flex items-center gap-3">
       <svg class="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
       Account Verified Successfully!
@@ -19,53 +57,50 @@ const tokensRemaining = 0;        // Replace with dynamic portfolio.tokens_remai
     
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
       
-      <!-- Left Column: Portfolio Preview -->
       <div class="lg:col-span-2 space-y-8">
          <div class="bg-white p-8 rounded-2xl shadow-sm border border-slate-200">
             <h2 class="text-2xl font-black tracking-tight text-slate-900 mb-2">Your Live Portfolio</h2>
             <div class="flex gap-2 mt-4">
-                <!-- Dynamically inject the student ID into the URL -->
-                <input type="text" readonly value={`https://portloo.com/${studentId}`} class="w-full p-3 bg-slate-50 border border-slate-200 rounded-lg text-slate-600 focus:outline-none" />
-                <button class="bg-slate-900 text-white px-6 font-bold rounded-lg hover:bg-slate-800 transition">Copy</button>
+                <input type="text" id="share-url" readonly value="" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-lg text-slate-600 focus:outline-none" />
+                <button id="copy-btn" class="bg-slate-900 text-white px-6 font-bold rounded-lg hover:bg-slate-800 transition">Copy</button>
             </div>
          </div>
 
          <div class="bg-slate-100 rounded-2xl shadow-inner border border-slate-200 h-[600px] overflow-hidden relative">
-            <!-- Dynamically inject the iframe source -->
-            <iframe src={`/${studentId}`} class="w-full h-full border-0 pointer-events-none"></iframe>
+            <iframe id="preview-iframe" src={`/${studentId}`} class="w-full h-full border-0 pointer-events-none"></iframe>
          </div>
       </div>
 
-      <!-- Right Column: Controls & Paywall -->
       <div class="space-y-8">
          
-         <!-- Tokens & Regeneration -->
          <div class="bg-white p-8 rounded-2xl shadow-sm border border-slate-200">
             <h2 class="text-xl font-bold text-slate-900">AI Regenerate</h2>
             <div class="mt-4 flex items-center justify-between text-sm text-slate-600">
                 <span>Tokens remaining</span>
-                <!-- Dynamically render the token count -->
-                <span class="bg-slate-100 px-3 py-1 rounded-full font-black text-slate-900">{tokensRemaining} / 5</span>
+                <span id="token-display" class="bg-slate-100 px-3 py-1 rounded-full font-black text-slate-900">{tokensRemaining} / 5</span>
             </div>
             
-            <!-- Disable button and style as locked if 0 tokens -->
             <button 
+              id="regenerate-btn"
               disabled={tokensRemaining === 0}
-              class={`w-full mt-6 py-3 rounded-xl font-bold transition border ${tokensRemaining > 0 ? 'bg-slate-900 text-white hover:bg-slate-800 border-slate-900' : 'bg-slate-50 text-slate-400 cursor-not-allowed border-slate-200'}`}
+              class={`w-full mt-6 py-3 rounded-xl font-bold transition border flex justify-center items-center gap-2 ${tokensRemaining > 0 ? 'bg-slate-900 text-white hover:bg-slate-800 border-slate-900 cursor-pointer' : 'bg-slate-50 text-slate-400 cursor-not-allowed border-slate-200'}`}
             >
-                {tokensRemaining > 0 ? 'Regenerate Design' : 'Upgrade to Regenerate'}
+                <span id="btn-text">{tokensRemaining > 0 ? 'Regenerate Design' : 'Upgrade to Regenerate'}</span>
+                <svg id="loading-spinner" class="animate-spin -ml-1 mr-3 h-5 w-5 text-white hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
             </button>
+            <p id="regenerate-error" class="mt-3 text-sm font-medium text-red-600 hidden"></p>
          </div>
 
-         <!-- Premium Paywall: Only show if the user is NOT premium -->
          { !isPremium && (
              <div class="bg-gradient-to-br from-indigo-600 to-purple-700 p-8 rounded-2xl shadow-xl text-white relative overflow-hidden">
                 <div class="relative z-10">
                     <h2 class="text-2xl font-black">Unlock Premium</h2>
                     <ul class="mt-6 space-y-3 text-indigo-100 font-medium">
-                       <li class="flex gap-2"><span>✓</span> Remove Portloo watermark</li>
+                       <li class="flex gap-2"><span>✓</span> Remove preview watermark</li>
                        <li class="flex gap-2"><span>✓</span> Custom domain linking</li>
-                       <!-- Updated to reflect the 5 token limit accurately -->
                        <li class="flex gap-2"><span>✓</span> Unlock 5 AI Theme Regenerations</li>
                     </ul>
                     <button class="w-full bg-white text-indigo-700 mt-8 py-4 rounded-xl font-black shadow-lg hover:scale-[1.02] transition-transform cursor-pointer">
@@ -79,13 +114,99 @@ const tokensRemaining = 0;        // Replace with dynamic portfolio.tokens_remai
     </div>
   </main>
 
-  <script>
+  <script is:inline define:vars={{ studentId, tokensRemaining }}>
+    // 1. Dynamic URL Generation (Works on localhost and production)
+    const shareUrlInput = document.getElementById('share-url');
+    if (shareUrlInput) {
+        shareUrlInput.value = `${window.location.origin}/${studentId}`;
+    }
+
+    // 2. Copy to Clipboard functionality
+    const copyBtn = document.getElementById('copy-btn');
+    copyBtn?.addEventListener('click', async () => {
+        try {
+            await navigator.clipboard.writeText(shareUrlInput.value);
+            const originalText = copyBtn.innerText;
+            copyBtn.innerText = 'Copied!';
+            copyBtn.classList.add('bg-emerald-600', 'hover:bg-emerald-500');
+            copyBtn.classList.remove('bg-slate-900', 'hover:bg-slate-800');
+            
+            setTimeout(() => {
+                copyBtn.innerText = originalText;
+                copyBtn.classList.remove('bg-emerald-600', 'hover:bg-emerald-500');
+                copyBtn.classList.add('bg-slate-900', 'hover:bg-slate-800');
+            }, 2000);
+        } catch (err) {
+            console.error('Failed to copy text: ', err);
+        }
+    });
+
+    // 3. Email Verification Banner logic
     if (window.location.hash.includes('type=signup') || window.location.hash.includes('access_token')) {
         const banner = document.getElementById('verification-banner');
         if (banner) banner.classList.remove('hidden');
-        
-        // Clean the URL hash so the banner doesn't persist on refresh
         window.history.replaceState(null, '', window.location.pathname + window.location.search);
     }
+
+    // 4. API Call: Trigger Python Backend for Theme Regeneration
+    const regenBtn = document.getElementById('regenerate-btn');
+    const btnText = document.getElementById('btn-text');
+    const spinner = document.getElementById('loading-spinner');
+    const errorText = document.getElementById('regenerate-error');
+    const tokenDisplay = document.getElementById('token-display');
+    const previewIframe = document.getElementById('preview-iframe');
+
+    // Make sure your backend API URL matches your deployment
+    const API_ENDPOINT = "https://api.thediyblogger.com/api/regenerate-theme";
+
+    regenBtn?.addEventListener('click', async () => {
+        // Reset state
+        errorText.classList.add('hidden');
+        regenBtn.disabled = true;
+        btnText.innerText = 'Designing...';
+        spinner.classList.remove('hidden');
+
+        try {
+            const response = await fetch(API_ENDPOINT, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ student_id: studentId })
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.detail || 'Failed to regenerate theme.');
+            }
+
+            // Success! Update tokens in the UI
+            tokenDisplay.innerText = `${data.tokens_remaining} / 5`;
+            
+            // Reload the iframe to show the brand new design
+            if (previewIframe) {
+                // Appending a timestamp forces the iframe to bypass the browser cache
+                previewIframe.src = `/${studentId}?t=${new Date().getTime()}`;
+            }
+
+            // If tokens are zero after this run, lock the button permanently
+            if (data.tokens_remaining <= 0) {
+                regenBtn.className = "w-full mt-6 py-3 rounded-xl font-bold transition border flex justify-center items-center gap-2 bg-slate-50 text-slate-400 cursor-not-allowed border-slate-200";
+                btnText.innerText = 'Upgrade to Regenerate';
+            } else {
+                regenBtn.disabled = false;
+                btnText.innerText = 'Regenerate Design';
+            }
+
+        } catch (err) {
+            errorText.innerText = err.message;
+            errorText.classList.remove('hidden');
+            regenBtn.disabled = false;
+            btnText.innerText = 'Regenerate Design';
+        } finally {
+            spinner.classList.add('hidden');
+        }
+    });
   </script>
 </Layout>
