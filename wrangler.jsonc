@@ -1,10 +1,5 @@
 {
-  "name": "ai-portfolio-template-astro",
-  "main": "./dist/_worker.js/index.js",
+  "pages_build_output_dir": "dist",
   "compatibility_date": "2026-07-13",
-  "compatibility_flags": ["nodejs_compat"],
-  "assets": {
-    "binding": "ASSETS",
-    "directory": "./dist"
-  }
+  "compatibility_flags": ["nodejs_compat"]
 }
