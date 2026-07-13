@@ -15,7 +15,6 @@ export default defineConfig({
       authToken: process.env.SENTRY_AUTH_TOKEN,
     }),
   ],
-  ],
   vite: {
     plugins: [tailwindcss()],
     // Removed the manual alias block so Astro defers to tsconfig.json automatically
