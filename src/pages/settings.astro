@@ -73,6 +73,26 @@ const STRIPE_LINK = "https://buy.stripe.com/test_YourLinkHere";
       </section>
 
       <section class="bg-white p-8 rounded-2xl shadow-sm border border-slate-200">
+        <h2 class="text-xl font-bold text-slate-900 border-b border-slate-100 pb-4 mb-6">Security</h2>
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div>
+            <p class="text-slate-600 font-medium">Change Account Password</p>
+            <p class="text-sm text-slate-400 mt-1">We will email you a secure link to update your password credentials.</p>
+          </div>
+          <button 
+            id="reset-password-btn" 
+            data-email={user.email}
+            data-url={supabaseUrl}
+            data-key={supabaseKey}
+            class="bg-slate-900 text-white px-6 py-3 rounded-xl font-bold hover:bg-slate-800 transition shadow-md whitespace-nowrap cursor-pointer disabled:opacity-50"
+          >
+            Send Reset Link
+          </button>
+        </div>
+        <p id="reset-message" class="text-sm font-bold mt-4 hidden"></p>
+      </section>
+
+      <section class="bg-white p-8 rounded-2xl shadow-sm border border-slate-200">
         <h2 class="text-xl font-bold text-slate-900 border-b border-slate-100 pb-4 mb-6">Current Plan</h2>
         
         <div class="flex items-center justify-between">
@@ -110,16 +130,58 @@ const STRIPE_LINK = "https://buy.stripe.com/test_YourLinkHere";
 
     </div>
   </main>
-
-  <script is:inline>
-    // --- Sign Out Logic ---
-    const signoutBtn = document.getElementById('signout-btn');
-    signoutBtn?.addEventListener('click', () => {
-        // Clear the secure cookies
-        document.cookie = 'sb-access-token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
-        document.cookie = 'sb-refresh-token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
-        // Send them back to the homepage
-        window.location.href = '/';
-    });
-  </script>
 </Layout>
+
+<script>
+  import { createClient } from '@supabase/supabase-js';
+
+  // --- Password Reset Flow ---
+  const resetBtn = document.getElementById('reset-password-btn') as HTMLButtonElement | null;
+  const resetMessage = document.getElementById('reset-message');
+
+  resetBtn?.addEventListener('click', async () => {
+    const email = resetBtn.getAttribute('data-email');
+    const url = resetBtn.getAttribute('data-url');
+    const key = resetBtn.getAttribute('data-key');
+
+    if (!email || !url || !key) return;
+
+    // UI Feedback state
+    resetBtn.disabled = true;
+    resetBtn.textContent = 'Sending Link...';
+
+    try {
+      const supabase = createClient(url, key);
+      
+      // Sends recovery email and redirects user back to an update password route
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/update-password`,
+      });
+
+      if (error) throw error;
+
+      if (resetMessage) {
+        resetMessage.textContent = 'Success! Check your email inbox for the reset link.';
+        resetMessage.classList.remove('hidden', 'text-red-600');
+        resetMessage.classList.add('text-emerald-600');
+      }
+    } catch (err: any) {
+      if (resetMessage) {
+        resetMessage.textContent = err.message || 'Failed to send reset link. Try again.';
+        resetMessage.classList.remove('hidden', 'text-emerald-600');
+        resetMessage.classList.add('text-red-600');
+      }
+    } finally {
+      resetBtn.disabled = false;
+      resetBtn.textContent = 'Send Reset Link';
+    }
+  });
+
+  // --- Sign Out Logic ---
+  const signoutBtn = document.getElementById('signout-btn');
+  signoutBtn?.addEventListener('click', () => {
+      document.cookie = 'sb-access-token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+      document.cookie = 'sb-refresh-token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+      window.location.href = '/';
+  });
+</script>
