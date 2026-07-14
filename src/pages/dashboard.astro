@@ -138,7 +138,7 @@ const STRIPE_LINK = "https://buy.stripe.com/9B6cN6gGR0ukaPDbTL5gc01"; // Replace
     </div>
   </main>
 
-  <script is:inline define:vars={{ studentId, tokensRemaining }}>
+  <script is:inline define:vars={{ studentId, tokensRemaining, accessToken }}>
     // --- UI Interactions ---
     const shareUrlInput = document.getElementById('share-url');
     if (shareUrlInput) { shareUrlInput.value = `${window.location.origin}/${studentId}`; }
@@ -211,7 +211,7 @@ const STRIPE_LINK = "https://buy.stripe.com/9B6cN6gGR0ukaPDbTL5gc01"; // Replace
         try {
             const response = await fetch(API_ENDPOINT, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json','Authorization': `Bearer ${accessToken}` },
                 body: JSON.stringify({ student_id: studentId })
             });
             const data = await response.json();
