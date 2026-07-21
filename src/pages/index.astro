@@ -4,7 +4,14 @@ import Layout from '../layouts/Layout.astro';
 
 <Layout title="OTILOF.COM">
   <main class="relative flex min-h-screen flex-col items-center justify-center bg-slate-50 p-6 text-center antialiased">
-    
+
+    <!-- Logo, top-left -->
+    <div class="absolute top-6 left-6 sm:top-8 sm:left-8">
+      <a href="/" class="inline-flex items-baseline text-2xl font-black tracking-tight text-slate-950">
+        otilof<span class="text-amber-500">.</span>
+      </a>
+    </div>
+
     <!-- Top Navigation for Returning Users -->
     <div class="absolute top-6 right-6 sm:top-8 sm:right-8">
       <p class="text-sm text-slate-600 font-medium">
@@ -98,16 +105,39 @@ import Layout from '../layouts/Layout.astro';
       <button
         id="upload-button"
         onclick="triggerResumeUpload()"
-        class="rounded-lg bg-slate-950 px-8 py-4 font-bold text-white transition hover:bg-slate-800 shadow-xl cursor-pointer"
+        class="rounded-full bg-slate-950 px-8 py-4 font-bold text-white transition hover:bg-slate-800 shadow-xl cursor-pointer"
       >
         Upload Your Resume
       </button>
 
-      <a href="/demo-student" class="rounded-lg border-2 border-slate-200 bg-white px-8 py-4 font-bold text-slate-900 transition hover:border-slate-300">
+      <a href="/demo-student" class="rounded-full border-2 border-slate-200 bg-white px-8 py-4 font-bold text-slate-900 transition hover:border-slate-300">
         View Demo Profile
       </a>
     </div>
 
     <p id="upload-status" class="mt-4 text-sm text-red-600"></p>
+
+    <!-- Featurebase SDK: loads the Messenger (live chat + help center) -->
+    <script is:inline>
+      !(function(e,t){const a="featurebase-sdk";function n(){if(!t.getElementById(a)){var e=t.createElement("script");(e.id=a),(e.src="https://do.featurebase.app/js/sdk.js"),t.getElementsByTagName("script")[0].parentNode.insertBefore(e,t.getElementsByTagName("script")[0])}}"function"!=typeof e.Featurebase&&(e.Featurebase=function(){(e.Featurebase.q=e.Featurebase.q||[]).push(arguments)}),"complete"===t.readyState||"interactive"===t.readyState?n():t.addEventListener("DOMContentLoaded",n)})(window,document);
+
+      Featurebase("boot", {
+        appId: "YOUR_APP_ID", // TODO: replace with your Featurebase App ID (Settings → Developers → Installation)
+        hideDefaultLauncher: true, // we use our own button below instead of Featurebase's floating launcher
+      });
+    </script>
+
+    <!-- Support button, bottom-right -->
+    <button
+      type="button"
+      onclick="Featurebase('show')"
+      aria-label="Contact support"
+      title="Contact support"
+      class="fixed bottom-6 right-6 sm:bottom-8 sm:right-8 z-50 inline-flex h-14 w-14 items-center justify-center rounded-full bg-slate-950 text-white shadow-xl transition hover:bg-slate-800 hover:scale-105"
+    >
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-6 w-6">
+        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+      </svg>
+    </button>
   </main>
 </Layout>
