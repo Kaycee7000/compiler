@@ -3,12 +3,15 @@ import react from "@astrojs/react";
 import tailwindcss from "@tailwindcss/vite";
 import cloudflare from "@astrojs/cloudflare";
 import sentry from "@sentry/astro";
+import sitemap from "@astrojs/sitemap";
 
 export default defineConfig({
+  site: "https://otilof.com",
   output: "server", 
   adapter: cloudflare(),
   integrations: [
     react(),
+    sitemap(),
     sentry({
       project: "javascript-astro",
       org: "kaycee-lz",
